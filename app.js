@@ -1,4 +1,5 @@
 require("dotenv").config();
+const bcrypt = require("bcryptjs");
 const express = require("express");
 const path = require("path");
 const session = require("express-session");
@@ -31,16 +32,29 @@ app.use(express.urlencoded({ extended: false }));
 
 app.get("/", (req, res) => res.render("index", { user: req.user }));
 app.get("/sign-up", (req, res) => res.render("sign-up-form"));
-
-app.post("/sign-up", (req, res, next) => {
-  const user = new User({
-    username: req.body.username,
-    password: req.body.password,
-  }).save((err) => {
+app.get("/log-out", (req, res, next) => {
+  req.logout(function (err) {
     if (err) {
       return next(err);
     }
     res.redirect("/");
+  });
+});
+
+app.post("/sign-up", (req, res, next) => {
+  bcrypt.hash(req.body.password, 10, (err, hashedPassword) => {
+    if (err) {
+      return next(err);
+    }
+    const user = new User({
+      username: req.body.username,
+      password: hashedPassword,
+    }).save((err) => {
+      if (err) {
+        return next(err);
+      }
+      res.redirect("/");
+    });
   });
 });
 
